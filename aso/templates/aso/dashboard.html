@@ -525,18 +525,7 @@
                                 {% endwith %}
                                 {% with dl=result.difficulty_breakdown.download_estimates %}
                                 {% if dl %}
-                                <div id="dl-chart-{{ result.id }}" class="mb-4"></div>
-                                <script>
-                                setTimeout(function() {
-                                    var el = document.getElementById('dl-chart-{{ result.id }}');
-                                    if (el && typeof window.renderDownloadChart === 'function') {
-                                        el.innerHTML = window.renderDownloadChart(
-                                            {{ dl|to_json }},
-                                            {{ result.app_rank|default:"null" }}
-                                        );
-                                    }
-                                }, 0);
-                                </script>
+                                <div id="dl-chart-{{ result.id }}" class="mb-4 dl-chart-pending" data-estimates='{{ dl|to_json }}' data-app-rank="{{ result.app_rank|default_if_none:"" }}"></div>
                                 {% endif %}
                                 {% endwith %}
                                 <div class="overflow-x-auto">
@@ -979,6 +968,33 @@ function initHistoryFilters() {
     const diffInput = document.getElementById('filter-diff-max');
     if (popInput) popInput.addEventListener('change', applyServerFilters);
     if (diffInput) diffInput.addEventListener('change', applyServerFilters);
+
+    // Country filter — must be re-attached after refreshHistorySection replaces the DOM
+    const historyCountryFilter = document.getElementById('history-country-filter');
+    if (historyCountryFilter) {
+        historyCountryFilter.addEventListener('change', function() {
+            const country = this.value;
+            try {
+                if (country) {
+                    localStorage.setItem('aso_history_country', country);
+                } else {
+                    localStorage.removeItem('aso_history_country');
+                }
+            } catch(e) {}
+            const params = new URLSearchParams(window.location.search);
+            if (country) {
+                params.set('country', country);
+            } else {
+                params.delete('country');
+            }
+            params.delete('page');
+            const qs = params.toString();
+            window.location.href = qs ? `?${qs}` : '{% url "aso:dashboard" %}';
+        });
+    }
+
+    // Render download charts in history rows
+    renderHistoryDownloadCharts();
 }
 
 // Close insight dropdown on outside click
@@ -1043,15 +1059,8 @@ async function refreshHistorySection() {
             oldHistory.replaceWith(newHistory);
             // Re-run date conversion on the new content
             convertDatesToLocal();
-            // Re-attach filter event listeners on the new DOM elements
+            // Re-attach filter event listeners and render download charts
             initHistoryFilters();
-            // Execute inline scripts (e.g. download chart renderers)
-            // DOMParser doesn't execute <script> tags, so we re-create them
-            document.getElementById('history-section').querySelectorAll('script').forEach(oldScript => {
-                const newScript = document.createElement('script');
-                newScript.textContent = oldScript.textContent;
-                oldScript.parentNode.replaceChild(newScript, oldScript);
-            });
         }
     } catch (e) {
         // Silently fail — user can still manually reload
@@ -1368,6 +1377,23 @@ window.renderRankingTiers = function(tiers) {
         </div>`;
 };
 
+// Render all pending download charts in the history table
+// Called by initHistoryFilters() on page load and after refreshHistorySection()
+function renderHistoryDownloadCharts() {
+    document.querySelectorAll('.dl-chart-pending').forEach(function(el) {
+        try {
+            var estimates = JSON.parse(el.getAttribute('data-estimates'));
+            var appRankStr = el.getAttribute('data-app-rank');
+            var appRank = appRankStr ? parseInt(appRankStr, 10) : null;
+            if (isNaN(appRank)) appRank = null;
+            el.innerHTML = window.renderDownloadChart(estimates, appRank);
+            el.classList.remove('dl-chart-pending');
+        } catch (e) {
+            // Skip charts with invalid data
+        }
+    });
+}
+
 // --- Search Form & Result Cards ---
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('search-form');
@@ -1410,10 +1436,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = qs ? `?${qs}` : '{% url "aso:dashboard" %}';
     });
 
-    // History country filter
+    // Restore country filter from localStorage if no ?country= param
     const historyCountryFilter = document.getElementById('history-country-filter');
     if (historyCountryFilter) {
-        // Restore from localStorage if no ?country= param
         if (!urlParams.has('country')) {
             const savedCountry = localStorage.getItem('aso_history_country');
             if (savedCountry && historyCountryFilter.querySelector(`option[value="${savedCountry}"]`)) {
@@ -1424,25 +1449,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         }
-        historyCountryFilter.addEventListener('change', function() {
-            const country = this.value;
-            try {
-                if (country) {
-                    localStorage.setItem('aso_history_country', country);
-                } else {
-                    localStorage.removeItem('aso_history_country');
-                }
-            } catch(e) {}
-            const params = new URLSearchParams(window.location.search);
-            if (country) {
-                params.set('country', country);
-            } else {
-                params.delete('country');
-            }
-            params.delete('page'); // Reset to page 1 on filter change
-            const qs = params.toString();
-            window.location.href = qs ? `?${qs}` : '{% url "aso:dashboard" %}';
-        });
     }
 
     form.addEventListener('submit', async function(e) {

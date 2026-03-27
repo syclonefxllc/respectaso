@@ -13,6 +13,12 @@ block_cipher = None
 
 BASE_DIR = Path(os.getcwd())
 
+# Read VERSION from core/settings.py so Info.plist stays in sync
+import re
+_settings_text = (BASE_DIR / "core" / "settings.py").read_text()
+_version_match = re.search(r'^VERSION\s*=\s*["\']([^"\']+)["\']', _settings_text, re.MULTILINE)
+VERSION = _version_match.group(1) if _version_match else "0.0.0"
+
 a = Analysis(
     [str(BASE_DIR / "desktop" / "main.py")],
     pathex=[str(BASE_DIR)],
@@ -105,8 +111,8 @@ app = BUNDLE(
     info_plist={
         "CFBundleName": "RespectASO",
         "CFBundleDisplayName": "RespectASO",
-        "CFBundleShortVersionString": "2.0.0",
-        "CFBundleVersion": "2.0.0",
+        "CFBundleShortVersionString": VERSION,
+        "CFBundleVersion": VERSION,
         "CFBundleIdentifier": "com.respectlytics.respectaso",
         "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "12.0",

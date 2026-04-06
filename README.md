@@ -28,8 +28,8 @@ Most ASO tools require paid subscriptions, API keys, and send your keyword resea
 
 | Feature | Description |
 |---------|-------------|
-| **Keyword Popularity** | Estimated popularity scores (1–100) derived from a 6-signal model analyzing iTunes Search competitor data |
-| **Difficulty Score** | 7 weighted sub-scores (rating volume, dominant players, rating quality, market age, publisher diversity, app count, content relevance) with ranking tier analysis |
+| **Keyword Popularity** | Estimated popularity scores (1–100) based on analysis of iTunes Search API competitor data |
+| **Difficulty Score** | Competition difficulty analysis across multiple factors with ranking tier breakdowns for Top 5, Top 10, and Top 20 |
 | **Ranking Tiers** | Separate difficulty analysis for Top 5, Top 10, and Top 20 positions — because breaking into the top 5 is different from reaching the top 20 |
 | **Download Estimates** | Estimated daily downloads per ranking position based on search volume, tap-through rates, and conversion rates |
 | **Competitor Analysis** | See the top 10 apps ranking for each keyword with ratings, reviews, genre, release date, and direct App Store links |
@@ -123,44 +123,19 @@ RespectASO uses the **iTunes Search API** as its only data source — no Apple S
 
 ### Popularity Score (1–100)
 
-A 6-signal composite model that estimates how often a keyword is searched:
-
-| Signal | Weight | What It Measures |
-|--------|--------|------------------|
-| Result count | 0–25 pts | How many apps appear for this keyword |
-| Leader strength | 0–30 pts | Rating volume of the top-ranking apps |
-| Title match density | 0–20 pts | How many apps use this exact keyword in their title |
-| Market depth | 0–10 pts | Whether strong apps appear deep in results |
-| Specificity penalty | -5 to -30 | Adjusts for generic terms that inflate result counts |
-| Exact phrase bonus | 0–15 pts | Rewards multi-word keywords with precise matches |
+Estimates how frequently a keyword is searched by analyzing multiple signals from iTunes Search results, including the number and quality of competing apps, keyword relevance patterns, and market depth. Higher scores mean more people are searching for that keyword.
 
 ### Difficulty Score (1–100)
 
-A 7-factor weighted system that estimates how hard it is to rank:
+Estimates how hard it would be to rank for a keyword by evaluating competition strength across factors like existing app ratings, market dominance, publisher diversity, and content relevance.
 
-| Factor | Weight | What It Measures |
-|--------|--------|------------------|
-| Rating volume | 30% | How many ratings competitors have |
-| Dominant players | 20% | Whether a few apps dominate (100K+ ratings) |
-| Rating quality | 10% | Average star ratings of competitors |
-| Market maturity | 10% | How long competitors have been on the App Store |
-| Publisher diversity | 10% | Whether results come from many publishers or a few |
-| App count | 10% | Total number of relevant results |
-| Content relevance | 10% | How well competitors match the keyword |
-
-**Interpretation:** Very Easy (&lt;16) · Easy (16–35) · Moderate (36–55) · Hard (56–75) · Very Hard (76–90) · Extreme (91+)
+**Tiers:** Very Easy (&lt;16) · Easy (16–35) · Moderate (36–55) · Hard (56–75) · Very Hard (76–90) · Extreme (91+)
 
 ### Download Estimates
 
-A 3-stage pipeline estimates daily downloads per ranking position:
+Estimates daily downloads per ranking position based on search volume, expected tap-through rates by position, and install conversion rates. Results are shown as conservative–optimistic ranges with tier breakdowns for Top 5, Top 6–10, and Top 11–20.
 
-1. **Popularity → Daily Searches** — piecewise-linear mapping calibrated against real App Store observations, scaled by country market size
-2. **Position → Tap-Through Rate** — power-law decay from position #1 (30%) to position #20 (0.07%)
-3. **Tap → Install Conversion** — range of 5% (unknown indie app, weak listing) to 20% (category leader with strong brand)
-
-Results are shown as conservative–optimistic ranges per position, with tier breakdowns for Top 5, Top 6–10, and Top 11–20.
-
-For more details, visit the **Methodology** page inside the app.
+For full methodology details, visit the **Methodology** page inside the app or explore the [source code](https://github.com/respectlytics/respectaso).
 
 ## Configuration
 
